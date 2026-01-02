@@ -12,4 +12,8 @@
 TensorPtr matmul(TensorPtr A, TensorPtr B);
 TensorPtr relu(TensorPtr input);
 
+// Phase 3
+TensorPtr sub(TensorPtr A, TensorPtr B);
+TensorPtr mse_loss(TensorPtr pred, TensorPtr target);
+
 #endif
