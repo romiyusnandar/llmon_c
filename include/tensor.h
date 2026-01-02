@@ -14,6 +14,13 @@
 
 #include <vector>
 #include <iostream>
+#include <memory>
+#include <functional>
+#include <set>
+
+struct Tensor;
+
+using TensorPtr = std::shared_ptr<Tensor>;
 
 struct Tensor {
     int rows;
@@ -21,14 +28,21 @@ struct Tensor {
     std::vector<float> data;
     std::vector<float> grad;
 
-    // Constructor
+    std::vector<TensorPtr> prev;
+
+    std::function<void()> _backward;
+
     Tensor(int r, int c);
+    static TensorPtr create(int r, int c);
 
     // Methods
     void random_init();
     void zero_grad();
+    void backward();
+
     float& at(int i, int j);
-    void print() const; 
+    float& grad_at(int i, int j); 
+    void print() const;
 };
 
 #endif

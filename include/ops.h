@@ -8,8 +8,8 @@
 
 #include "tensor.h"
 
-// Forward Pass Operations
-Tensor matmul(Tensor& A, Tensor& B);
-Tensor relu(Tensor& input); 
+// Input Pointer -> Output Pointer
+TensorPtr matmul(TensorPtr A, TensorPtr B);
+TensorPtr relu(TensorPtr input);
 
 #endif

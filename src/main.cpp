@@ -3,30 +3,35 @@
 #include "../include/ops.h"
 
 int main() {
-    std::cout << "=== Micro-LLM C++ Engine ===\n\n";
+    std::cout << "=== Micro-LLM C++: Phase 2 (Autograd) ===\n\n";
 
-    // 1. Setup Input
-    Tensor input(1, 5);
-    input.data = {-1.0f, 0.5f, 2.0f, -3.0f, 1.5f};
-    std::cout << "[Input]\n";
-    input.print();
+    auto input = Tensor::create(1, 3);
+    input->data = {1.0f, -2.0f, 3.0f};
+    std::cout << "[Input]\n"; input->print();
 
-    // 2. Setup Weights
-    Tensor weights(5, 3);
-    weights.random_init();
-    std::cout << "[Weights]\n";
-    weights.print();
+    auto weights = Tensor::create(3, 1);
+    weights->data = {0.5f, 0.5f, 0.5f};
+    std::cout << "[Weights]\n"; weights->print();
+    auto hidden = matmul(input, weights);
+    auto output = relu(hidden);
 
-    // 3. Layer 1: Linear (MatMul)
-    Tensor hidden = matmul(input, weights);
-    std::cout << "[Hidden Layer (Pre-ReLU)]\n";
-    hidden.print();
+    std::cout << "[Output Forward]\n";
+    output->print();
 
-    // 4. Activation: ReLU
-    Tensor output = relu(hidden);
-    std::cout << "[Output (Post-ReLU)]\n";
-    output.print();
-    std::cout << "Note: The negative values ​​above should be 0.0000\n";
+    std::cout << "Running Backward Pass...\n";
+    output->backward();
+
+    std::cout << "\n[Gradients at Input]\n";
+    for(int i=0; i<3; i++) {
+        std::cout << input->grad[i] << " ";
+    }
+    std::cout << "\n(Expected: 0.5 0.5 0.5)\n";
+
+    std::cout << "\n[Gradients at Weights]\n";
+    for(int i=0; i<3; i++) {
+        std::cout << weights->grad[i] << " ";
+    }
+    std::cout << "\n(Expected: 1.0 -2.0 3.0)\n";
 
     return 0;
 }
