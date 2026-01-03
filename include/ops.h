@@ -8,15 +8,21 @@
 
 #include "tensor.h"
 
-// Input Pointer -> Output Pointer
+// Basic Operations
 TensorPtr matmul(TensorPtr A, TensorPtr B);
 TensorPtr relu(TensorPtr input);
-
-// Phase 3
 TensorPtr sub(TensorPtr A, TensorPtr B);
-TensorPtr mse_loss(TensorPtr pred, TensorPtr target);
-
 TensorPtr transpose(TensorPtr A);
 TensorPtr softmax(TensorPtr input);
+
+// Loss Functions
+TensorPtr mse_loss(TensorPtr pred, TensorPtr target);
+TensorPtr cross_entropy_loss(TensorPtr pred, TensorPtr target);
+
+// Additional Useful Operations
+TensorPtr add(TensorPtr A, TensorPtr B);
+TensorPtr multiply(TensorPtr A, TensorPtr B); // Element-wise
+TensorPtr tanh_activation(TensorPtr input);
+TensorPtr sigmoid(TensorPtr input);
 
 #endif

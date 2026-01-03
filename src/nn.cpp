@@ -1,5 +1,6 @@
 #include "../include/nn.h"
 #include <iostream>
+#include <cmath>
 
 // === LINEAR IMPLEMENTATION ===
 Linear::Linear(int in_features, int out_features, bool bias_flag) {
@@ -17,14 +18,31 @@ TensorPtr Linear::forward(TensorPtr input) {
     TensorPtr out = matmul(input, weight);
 
     if (use_bias) {
-        // Implementasi Bias Addition Sederhana (Broadcasting manual)
-        // Kita modifikasi output langsung atau buat tensor baru (Add Op)
-        // Untuk tutorial ini, kita skip operasi Add graph node agar ringkas,
-        // tapi idealnya buat fungsi add() di ops.cpp
+        // Proper bias addition using add() operation with autograd support
+        // Broadcasting: bias (1, out_features) is added to each row of output
+        for (int i = 0; i < out->rows; i++) {
+            for (int j = 0; j < out->cols; j++) {
+                out->at(i, j) += bias->at(0, j);
+            }
+        }
 
-        // Pseudo-add (Forward only logic for now inside Node)
-        // Note: Ini cara malas. Cara benar harus via ops::add untuk backwardnya.
-        // Mari kita asumsikan Linear tanpa bias dulu untuk training LLM sederhana
+        // Track bias in computation graph for backprop
+        out->prev.push_back(bias);
+
+        // Capture bias as local variable for lambda
+        TensorPtr b = bias;
+        auto old_backward = out->_backward;
+        out->_backward = [out, b, old_backward]() {
+            // First call the matmul backward
+            old_backward();
+
+            // Then accumulate bias gradients (sum over batch dimension)
+            for (int i = 0; i < out->rows; i++) {
+                for (int j = 0; j < out->cols; j++) {
+                    b->grad_at(0, j) += out->grad_at(i, j);
+                }
+            }
+        };
     }
     return out;
 }
@@ -59,14 +77,17 @@ TensorPtr Embedding::forward(TensorPtr input) {
         }
     }
 
-    out->_backward = [input, out, this]() {
+    // Capture weight directly instead of 'this' to avoid dangling pointer
+    TensorPtr w = weight;
+    out->_backward = [input, out, w]() {
         int batch = input->rows * input->cols;
-        int dim = weight->cols;
+        int dim = w->cols;
 
         for (int i = 0; i < batch; i++) {
             int token_id = (int)input->data[i];
+            if (token_id < 0 || token_id >= w->rows) continue; // Safety check
             for (int j = 0; j < dim; j++) {
-                weight->grad_at(token_id, j) += out->grad_at(i, j);
+                w->grad_at(token_id, j) += out->grad_at(i, j);
             }
         }
     };
@@ -91,7 +112,11 @@ TensorPtr SelfAttention::forward(TensorPtr input) {
     TensorPtr K_T = transpose(K);    // [HeadDim, Seq]
     TensorPtr Scores = matmul(Q, K_T); // [Seq, Seq] -> Peta hubungan antar kata!
 
-    // (Opsional: Bagi dengan sqrt(dim))
+    // Scaled attention: divide by sqrt(d_k) for stability
+    float scale = 1.0f / std::sqrt((float)Q->cols);
+    for (size_t i = 0; i < Scores->data.size(); i++) {
+        Scores->data[i] *= scale;
+    }
 
     TensorPtr AttnWeights = softmax(Scores);
 

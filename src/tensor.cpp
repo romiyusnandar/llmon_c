@@ -61,3 +61,31 @@ void Tensor::print() const {
         std::cout << "\n";
     }
 }
+
+void Tensor::print_grad() const {
+    std::cout << "Gradient (" << rows << "x" << cols << "):\n";
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            std::cout << std::fixed << std::setprecision(4) << grad[i * cols + j] << " ";
+        }
+        std::cout << "\n";
+    }
+}
+
+float Tensor::mean() const {
+    if (data.empty()) return 0.0f;
+    float sum = 0.0f;
+    for (const auto& val : data) sum += val;
+    return sum / data.size();
+}
+
+float Tensor::std_dev() const {
+    if (data.empty()) return 0.0f;
+    float m = mean();
+    float variance = 0.0f;
+    for (const auto& val : data) {
+        float diff = val - m;
+        variance += diff * diff;
+    }
+    return std::sqrt(variance / data.size());
+}

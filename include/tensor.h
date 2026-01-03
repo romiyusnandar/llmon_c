@@ -41,8 +41,11 @@ struct Tensor {
     void backward();
 
     float& at(int i, int j);
-    float& grad_at(int i, int j); 
+    float& grad_at(int i, int j);
     void print() const;
+    void print_grad() const; // Print gradients
+    float mean() const; // Calculate mean of data
+    float std_dev() const; // Calculate standard deviation
 };
 
 #endif

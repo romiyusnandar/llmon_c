@@ -20,17 +20,24 @@ TensorPtr matmul(TensorPtr A, TensorPtr B) {
     }
 
     C->_backward = [A, B, C]() {
+        // Optimized: dA = dC @ B^T, dB = A^T @ dC
         for (int i = 0; i < A->rows; i++) {
+            for (int k = 0; k < A->cols; k++) {
+                float grad_a = 0.0f;
+                for (int j = 0; j < B->cols; j++) {
+                    grad_a += C->grad_at(i, j) * B->at(k, j);
+                }
+                A->grad_at(i, k) += grad_a;
+            }
+        }
+
+        for (int k = 0; k < B->rows; k++) {
             for (int j = 0; j < B->cols; j++) {
-                float grad_val = C->grad_at(i, j);
-
-                for (int k = 0; k < A->cols; k++) {
-                    A->grad_at(i, k) += grad_val * B->at(k, j);
+                float grad_b = 0.0f;
+                for (int i = 0; i < A->rows; i++) {
+                    grad_b += A->at(i, k) * C->grad_at(i, j);
                 }
-
-                for (int k = 0; k < A->cols; k++) {
-                    B->grad_at(k, j) += A->at(i, k) * grad_val;
-                }
+                B->grad_at(k, j) += grad_b;
             }
         }
     };
@@ -170,4 +177,116 @@ TensorPtr softmax(TensorPtr input) {
         }
     };
     return output;
+}
+
+// === ADDITIONAL OPERATIONS ===
+
+TensorPtr add(TensorPtr A, TensorPtr B) {
+    assert(A->rows == B->rows && A->cols == B->cols);
+    TensorPtr C = Tensor::create(A->rows, A->cols);
+    C->prev = {A, B};
+
+    // Forward: C = A + B
+    for (size_t i = 0; i < A->data.size(); i++) {
+        C->data[i] = A->data[i] + B->data[i];
+    }
+
+    // Backward: dA = dC, dB = dC
+    C->_backward = [A, B, C]() {
+        for (size_t i = 0; i < A->data.size(); i++) {
+            A->grad[i] += C->grad[i];
+            B->grad[i] += C->grad[i];
+        }
+    };
+
+    return C;
+}
+
+TensorPtr multiply(TensorPtr A, TensorPtr B) {
+    assert(A->rows == B->rows && A->cols == B->cols);
+    TensorPtr C = Tensor::create(A->rows, A->cols);
+    C->prev = {A, B};
+
+    // Forward: C = A * B (element-wise)
+    for (size_t i = 0; i < A->data.size(); i++) {
+        C->data[i] = A->data[i] * B->data[i];
+    }
+
+    // Backward: dA = dC * B, dB = dC * A
+    C->_backward = [A, B, C]() {
+        for (size_t i = 0; i < A->data.size(); i++) {
+            A->grad[i] += C->grad[i] * B->data[i];
+            B->grad[i] += C->grad[i] * A->data[i];
+        }
+    };
+
+    return C;
+}
+
+TensorPtr tanh_activation(TensorPtr input) {
+    TensorPtr output = Tensor::create(input->rows, input->cols);
+    output->prev = {input};
+
+    // Forward: tanh(x)
+    for (size_t i = 0; i < input->data.size(); i++) {
+        output->data[i] = std::tanh(input->data[i]);
+    }
+
+    // Backward: d_tanh = (1 - tanh^2) * grad_out
+    output->_backward = [input, output]() {
+        for (size_t i = 0; i < input->data.size(); i++) {
+            float tanh_val = output->data[i];
+            input->grad[i] += (1.0f - tanh_val * tanh_val) * output->grad[i];
+        }
+    };
+
+    return output;
+}
+
+TensorPtr sigmoid(TensorPtr input) {
+    TensorPtr output = Tensor::create(input->rows, input->cols);
+    output->prev = {input};
+
+    // Forward: sigmoid(x) = 1 / (1 + exp(-x))
+    for (size_t i = 0; i < input->data.size(); i++) {
+        output->data[i] = 1.0f / (1.0f + std::exp(-input->data[i]));
+    }
+
+    // Backward: d_sigmoid = sigmoid * (1 - sigmoid) * grad_out
+    output->_backward = [input, output]() {
+        for (size_t i = 0; i < input->data.size(); i++) {
+            float sig_val = output->data[i];
+            input->grad[i] += sig_val * (1.0f - sig_val) * output->grad[i];
+        }
+    };
+
+    return output;
+}
+
+TensorPtr cross_entropy_loss(TensorPtr pred, TensorPtr target) {
+    assert(pred->rows == target->rows && pred->cols == target->cols);
+
+    TensorPtr loss = Tensor::create(1, 1);
+    loss->prev = {pred, target};
+
+    // Forward: -sum(target * log(pred + eps)) / batch_size
+    float total_loss = 0.0f;
+    const float eps = 1e-7f; // For numerical stability
+
+    for (size_t i = 0; i < pred->data.size(); i++) {
+        total_loss -= target->data[i] * std::log(pred->data[i] + eps);
+    }
+    loss->data[0] = total_loss / pred->rows;
+
+    // Backward: -target / (pred + eps) * grad_loss / batch_size
+    loss->_backward = [pred, target, loss]() {
+        const float eps = 1e-7f;
+        float n = (float)pred->rows;
+
+        for (size_t i = 0; i < pred->data.size(); i++) {
+            pred->grad[i] += (-target->data[i] / (pred->data[i] + eps)) * loss->grad[0] / n;
+        }
+    };
+
+    return loss;
 }
