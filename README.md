@@ -26,38 +26,23 @@ make
 
 ### Run Examples
 
-**🤖 GPT Text Generation (Interactive):**
+**Build all examples:**
 ```bash
-make run_gpt_interactive
+make examples
 ```
 
-**GPT Text Generation (Basic):**
+**Build & run individual examples:**
 ```bash
-make run_gpt
-```
-
-**Adam vs SGD Comparison:**
-```bash
-make run_adam
-```
-
-**Linear Layer with Bias Test:**
-```bash
-make run_test_bias
-```
-
-Or compile manually:
-```bash
+# Build
 make gpt_interactive
-./gpt_interactive
-
 make gpt_demo
-./gpt_demo
-
 make adam_demo
-./adam_demo
-
 make test_bias
+
+# Run (after building)
+./gpt_interactive
+./gpt_demo
+./adam_demo
 ./test_bias
 ```
 
