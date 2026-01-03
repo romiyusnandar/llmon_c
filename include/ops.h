@@ -16,4 +16,7 @@ TensorPtr relu(TensorPtr input);
 TensorPtr sub(TensorPtr A, TensorPtr B);
 TensorPtr mse_loss(TensorPtr pred, TensorPtr target);
 
+TensorPtr transpose(TensorPtr A);
+TensorPtr softmax(TensorPtr input);
+
 #endif

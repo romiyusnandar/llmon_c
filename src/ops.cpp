@@ -1,6 +1,7 @@
 #include "../include/ops.h"
 #include <cassert>
 #include <algorithm>
+#include <cmath>
 
 TensorPtr matmul(TensorPtr A, TensorPtr B) {
     assert(A->cols == B->rows && "Dimensi MatMul Salah!");
@@ -75,7 +76,7 @@ TensorPtr sub(TensorPtr A, TensorPtr B) {
             B->grad[i] -= C->grad[i];
         }
     };
-    
+
     return C;
 }
 
@@ -109,4 +110,64 @@ TensorPtr mse_loss(TensorPtr pred, TensorPtr target) {
     };
 
     return loss;
+}
+
+TensorPtr transpose(TensorPtr A) {
+    TensorPtr C = Tensor::create(A->cols, A->rows);
+    C->prev = {A};
+
+    // Forward: C[j, i] = A[i, j]
+    for (int i = 0; i < A->rows; i++) {
+        for (int j = 0; j < A->cols; j++) {
+            C->at(j, i) = A->at(i, j);
+        }
+    }
+
+    // Backward: Grad A[i, j] += Grad C[j, i]
+    C->_backward = [A, C]() {
+        for (int i = 0; i < A->rows; i++) {
+            for (int j = 0; j < A->cols; j++) {
+                A->grad_at(i, j) += C->grad_at(j, i);
+            }
+        }
+    };
+    return C;
+}
+
+TensorPtr softmax(TensorPtr input) {
+    TensorPtr output = Tensor::create(input->rows, input->cols);
+    output->prev = {input};
+
+    // Forward (Row-wise Softmax)
+    for (int i = 0; i < input->rows; i++) {
+        float max_val = -1e9;
+        for (int j = 0; j < input->cols; j++) max_val = std::max(max_val, input->at(i, j));
+
+        float sum_exp = 0.0f;
+        for (int j = 0; j < input->cols; j++) {
+            float val = std::exp(input->at(i, j) - max_val);
+            output->at(i, j) = val;
+            sum_exp += val;
+        }
+
+        for (int j = 0; j < input->cols; j++) {
+            output->at(i, j) /= sum_exp;
+        }
+    }
+
+    output->_backward = [input, output]() {
+        for (int i = 0; i < input->rows; i++) {
+            float dot = 0.0f;
+            for (int k = 0; k < input->cols; k++) {
+                dot += output->at(i, k) * output->grad_at(i, k);
+            }
+
+            for (int j = 0; j < input->cols; j++) {
+                float s = output->at(i, j);
+                float g = output->grad_at(i, j);
+                input->grad_at(i, j) += s * (g - dot);
+            }
+        }
+    };
+    return output;
 }

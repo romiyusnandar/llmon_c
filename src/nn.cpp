@@ -77,3 +77,33 @@ TensorPtr Embedding::forward(TensorPtr input) {
 std::vector<TensorPtr> Embedding::parameters() {
     return {weight};
 }
+
+SelfAttention::SelfAttention(int embed_dim, int head_dim)
+    : Wq(embed_dim, head_dim),
+      Wk(embed_dim, head_dim),
+      Wv(embed_dim, head_dim) {}
+
+TensorPtr SelfAttention::forward(TensorPtr input) {
+    TensorPtr Q = Wq.forward(input); // [Seq, HeadDim]
+    TensorPtr K = Wk.forward(input); // [Seq, HeadDim]
+    TensorPtr V = Wv.forward(input); // [Seq, HeadDim]
+
+    TensorPtr K_T = transpose(K);    // [HeadDim, Seq]
+    TensorPtr Scores = matmul(Q, K_T); // [Seq, Seq] -> Peta hubungan antar kata!
+
+    // (Opsional: Bagi dengan sqrt(dim))
+
+    TensorPtr AttnWeights = softmax(Scores);
+
+    TensorPtr Output = matmul(AttnWeights, V); // [Seq, HeadDim]
+
+    return Output;
+}
+
+std::vector<TensorPtr> SelfAttention::parameters() {
+    std::vector<TensorPtr> params;
+    auto p_q = Wq.parameters(); params.insert(params.end(), p_q.begin(), p_q.end());
+    auto p_k = Wk.parameters(); params.insert(params.end(), p_k.begin(), p_k.end());
+    auto p_v = Wv.parameters(); params.insert(params.end(), p_v.begin(), p_v.end());
+    return params;
+}

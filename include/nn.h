@@ -46,4 +46,19 @@ public:
     std::vector<TensorPtr> parameters() override;
 };
 
+/**
+ * We make simple SelfAttention feature
+ */
+class SelfAttention : public Module {
+public:
+    Linear Wq; // For Query projection layer
+    Linear Wk; // For Key projection layer
+    Linear Wv; // For Value projection layer
+
+    SelfAttention(int embed_dim, int head_dim);
+
+    TensorPtr forward(TensorPtr input) override;
+    std::vector<TensorPtr> parameters() override;
+};
+
 #endif
