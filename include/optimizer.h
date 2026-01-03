@@ -29,7 +29,7 @@ public:
 };
 
 /**
- * Adam Optimizer - More efficient than SGD
+ * Adam Optimizer
  * Adaptive learning rate with momentum
  */
 class Adam {

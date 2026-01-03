@@ -61,4 +61,50 @@ public:
     std::vector<TensorPtr> parameters() override;
 };
 
+/**
+ * Positional Embedding
+ * Adds position information to token embeddings
+ */
+class PositionalEmbedding : public Module {
+public:
+    TensorPtr pos_weight;
+
+    PositionalEmbedding(int max_seq_len, int embedding_dim);
+
+    TensorPtr forward(TensorPtr input) override;
+    std::vector<TensorPtr> parameters() override;
+};
+
+class TransformerBlock : public Module {
+public:
+    SelfAttention attn;
+    Linear ffn; // Feed Forward Network
+
+    TransformerBlock(int embed_dim, int head_dim);
+
+    TensorPtr forward(TensorPtr input) override;
+    std::vector<TensorPtr> parameters() override;
+};
+
+/**
+ * Simple GPT Model
+ * Token Embedding + Positional Embedding + Transformer + Output Head
+ */
+class GPT : public Module {
+public:
+    int vocab_size;
+    int embed_dim;
+    int max_seq_len;
+
+    Embedding token_embed;
+    PositionalEmbedding pos_embed;
+    TransformerBlock transformer;
+    Linear output_head;
+
+    GPT(int vocab_size, int embed_dim, int max_seq_len, int head_dim);
+
+    TensorPtr forward(TensorPtr input) override;
+    std::vector<TensorPtr> parameters() override;
+};
+
 #endif

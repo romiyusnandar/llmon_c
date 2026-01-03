@@ -40,8 +40,10 @@ ifeq ($(OS),Windows_NT)
 	if exist adam_demo del /q adam_demo
 	if exist test_bias.exe del /q test_bias.exe
 	if exist test_bias del /q test_bias
+	if exist gpt_demo.exe del /q gpt_demo.exe
+	if exist gpt_demo del /q gpt_demo
 else
-	rm -rf $(OBJ_DIR) $(TARGET) adam_demo test_bias
+	rm -rf $(OBJ_DIR) $(TARGET) adam_demo test_bias gpt_demo
 endif
 
 # Build adam_demo example
@@ -68,4 +70,28 @@ else
 	./test_bias
 endif
 
-.PHONY: all clean adam_demo run_adam test_bias run_test_bias
+# Build gpt_demo example
+gpt_demo: $(LIB_OBJS) $(OBJ_DIR)
+	$(CXX) $(CXXFLAGS) -o gpt_demo $(EXAMPLES_DIR)/gpt_demo.cpp $(LIB_OBJS)
+
+# Run gpt_demo
+run_gpt: gpt_demo
+ifeq ($(OS),Windows_NT)
+	.\gpt_demo
+else
+	./gpt_demo
+endif
+
+# Build gpt_interactive example
+gpt_interactive: $(LIB_OBJS) $(OBJ_DIR)
+	$(CXX) $(CXXFLAGS) -o gpt_interactive $(EXAMPLES_DIR)/gpt_interactive.cpp $(LIB_OBJS)
+
+# Run gpt_interactive
+run_gpt_interactive: gpt_interactive
+ifeq ($(OS),Windows_NT)
+	.\gpt_interactive
+else
+	./gpt_interactive
+endif
+
+.PHONY: all clean adam_demo run_adam test_bias run_test_bias gpt_demo run_gpt gpt_interactive run_gpt_interactive
